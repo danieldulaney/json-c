@@ -1,0 +1,76 @@
+FILES = \
+	arraylist \
+	debug \
+	json_c_version \
+	json_object \
+	json_object_iterator \
+	json_pointer \
+	json_tokener \
+	json_util \
+	json_visit \
+	linkhash \
+	printbuf \
+	random_seed
+
+HEADERS = $(addsuffix .h,$(FILES))
+OBJECTS = $(addsuffix .o,$(FILES))
+
+# C compiler options
+CC = gcc
+CFLAGS = -Wall
+LDFLAGS = 
+
+BUILD_DIR = build
+FS = \\
+
+# For (semi-) easy switching between Windows and Unix tools. Be careful using flags.
+RM = 2> NUL del
+RM_R = 2> NUL rd /s /q
+CP = 1> NUL copy
+MKDIR = 2> NUL mkdir
+TOUCH = type NUL >
+HIDE = attrib +H  # On Windows, hide a file. On Unix, use a command that does nothing, like true.
+ECHO = @echo
+
+build: $(BUILD_DIR)$(FS)lib$(FS)libjson-c.a $(addprefix $(BUILD_DIR)$(FS)include$(FS),$(HEADERS))
+	$(ECHO) Build successful
+
+$(BUILD_DIR)$(FS)lib$(FS)libjson-c.a: $(BUILD_DIR)$(FS)lib$(FS).dir libjson-c.a
+	$(CP) $(@F) $@
+
+# Given build/include/whatever, copy whatever into that location
+$(BUILD_DIR)$(FS)include$(FS)%: $(notdir $@) $(BUILD_DIR)$(FS)include$(FS).dir
+	$(CP) $(@F) $@
+
+$(BUILD_DIR)$(FS).dir:
+	$(MKDIR) $(BUILD_DIR)
+	$(TOUCH) $@
+	$(HIDE) $@
+
+$(BUILD_DIR)$(FS)include$(FS).dir: $(BUILD_DIR)$(FS).dir
+	$(MKDIR) $(BUILD_DIR)$(FS)include
+	$(TOUCH) $@
+	$(HIDE) $@
+
+$(BUILD_DIR)$(FS)lib$(FS).dir: $(BUILD_DIR)$(FS).dir
+	$(MKDIR) $(BUILD_DIR)$(FS)lib
+	$(TOUCH) $@
+	$(HIDE) $@
+
+libjson-c.a: config.h json_config.h $(OBJECTS)
+	ar -rsc libjson-c.a $(OBJECTS)
+
+config.h: config.h.mingw
+	$(CP) config.h.mingw config.h
+
+json_config.h: json_config.h.mingw
+	$(CP) json_config.h.mingw json_config.h
+
+clean: clean_build
+	-$(RM) *.o
+	-$(RM) *.a
+	-$(RM) config.h
+	-$(RM) json_config.h
+
+clean_build:
+	-$(RM_R) build
